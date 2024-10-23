@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <style>
+        /* Map Styles */
+        #map {
+            height: 500px;
+            position: relative;
+            overflow: hidden; /* Prevent overflow during animations */
+        }
+        .map-container {
+            margin: 20px 0;
+        }
+        .statistics-container {
+            margin-top: 20px;
+        }
+
+        /* Earthquake Animation */
+        .shake-animation {
+            animation: shake 1s; /* Increased duration to 1 second */
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px); }
+            10% { transform: translate(-1px, -2px); }
+            20% { transform: translate(-3px, 0px); }
+            30% { transform: translate(3px, 2px); }
+            40% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 2px); }
+            60% { transform: translate(-3px, 1px); }
+            70% { transform: translate(3px, 1px); }
+            80% { transform: translate(-1px, -1px); }
+            90% { transform: translate(1px, 2px); }
+            100% { transform: translate(1px, -2px); }
+        }
+
+        /* Water Animation */
+        .water-animation {
+            animation: wave 1s infinite; /* Continuous wave effect */
+        }
+        @keyframes wave {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Wind Animation */
+        .wind-animation {
+            animation: spin 1s linear forwards; /* 1 second for the wind spin */
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(3600deg); } /* 10 full spins */
+        }
+
+        /* Alert Box */
+        .disaster-alert {
+            background: rgba(255, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            margin-top: 10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Button Styles */
+        button, .pdf-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px; /* Space between buttons */
+        }
+        button:hover, .pdf-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Zone Styles */
+        .danger-zone {
+            background-color: red;
+            opacity: 0.3;
+            color: white; /* Text color inside the zone, if needed */
+        }
+
+        .safe-zone {
+            background-color: green;
+            opacity: 0.3;
+            color: white; /* Text color inside the zone, if needed */
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+
+    <div class="statistics-container">
+        <h3>Location: {{ city }}, {{ country }}</h3>
+        <p>Possible Natural Disasters: {{ location['disasters'] }}</p>
+
+        <!-- Statistics -->
+        <div class="stat"><strong>Weather:</strong> <span id="weather">{{ weather }}</span></div>
+        <div class="stat"><strong>Temperature:</strong> <span id="temperature">{{ temperature }}°C</span></div>
+        <div class="stat"><strong>Wind Speed:</strong> <span id="wind-speed">{{ wind_speed }} km/h</span></div>
+        <div class="stat"><strong>River Flow:</strong> <span id="river-flow">{{ river_flow }}</span></div>
+        <div class="stat"><strong>Vibrations:</strong> <span id="vibrations">{{ vibrations }}</span></div>
+
+        <!-- Alert -->
+        <div class="disaster-alert" id="disaster-alert">
+            ALERT: A disaster is happening!
+        </div>
+
+        <!-- Buttons -->
+        <div>
+            <button id="simulate-button">Simulate Disaster</button>
+            <a href="{{ url_for('static', filename='precautions.pdf') }}" class="pdf-button" target="_blank">Precautions</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const locationData = JSON.parse('{{ location | tojson }}');
+
+            const map = L.map('map').setView([locationData.lat, locationData.lng], 10);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            const marker = L.marker([locationData.lat, locationData.lng]).addTo(map)
+                .bindPopup('You are here: {{ city }}')
+                .openPopup();
+
+            let dangerZone, safeZone;
+
+            function createZones() {
+                // Remove existing zones
+                if (dangerZone) map.removeLayer(dangerZone);
+                if (safeZone) map.removeLayer(safeZone);
+
+                const radius = 3000; // 3 km
+
+                // Generate random positions without checking overlap
+                const dangerLatLng = getRandomLatLng();
+                const safeLatLng = getRandomLatLng();
+
+                // Create Danger Zone
+                dangerZone = L.circle(dangerLatLng, {
+                    color: 'red',
+                    fillColor: 'red',
+                    fillOpacity: 0.3,
+                    radius: radius
+                }).addTo(map).bindPopup('Danger Zone');
+
+                // Create Safe Zone
+                safeZone = L.circle(safeLatLng, {
+                    color: 'green',
+                    fillColor: 'green',
+                    fillOpacity: 0.3,
+                    radius: radius
+                }).addTo(map).bindPopup('Safe Zone');
+            }
+
+            function getRandomLatLng() {
+                const latOffset = (Math.random() - 0.5) * 0.04;
+                const lngOffset = (Math.random() - 0.5) * 0.04;
+                return L.latLng(locationData.lat + latOffset, locationData.lng + lngOffset);
+            }
+
+            // Initial Zones
+            createZones();
+
+            document.getElementById("simulate-button").addEventListener("click", function() {
+                fetch('/simulate_disaster')
+                    .then(response => response.json())
+                    .then(data => {
+                        const disaster = data.disaster;
+                        const alertBox = document.getElementById('disaster-alert');
+                        alertBox.style.display = 'block';
+                        alertBox.textContent = `ALERT: A ${disaster} is happening!`;
+
+                        // Remove previous animations
+                        removeAnimations();
+
+                        // Handle disaster-specific animations
+                        if (disaster === 'Earthquake') {
+                            const container = map.getContainer();
+                            container.classList.add('shake-animation');
+                            container.addEventListener('animationend', () => {
+                                container.classList.remove('shake-animation');
+                            });
+                        } else if (disaster === 'Flood' || disaster === 'Tsunami') {
+                            const waterEffect = document.createElement('div');
+                            waterEffect.className = 'water-animation';
+                            map.getContainer().appendChild(waterEffect);
+                            setTimeout(() => {
+                                waterEffect.remove();
+                            }, 5000); // Adjust duration for visibility
+                            const container = map.getContainer();
+                            container.classList.add('water-animation');
+                            setTimeout(() => {
+                                container.classList.remove('water-animation');
+                            }, 5000); // Duration for the wave effect
+                        } else if (disaster === 'Hurricane') {
+                            const windEffect = document.createElement('div');
+                            windEffect.className = 'wind-animation';
+                            map.getContainer().appendChild(windEffect);
+                            const container = map.getContainer();
+                            container.classList.add('wind-animation');
+                            setTimeout(() => {
+                                container.classList.remove('wind-animation');
+                            }, 1000); // Duration for the spin animation
+                        }
+
+                        // Create new zones for each simulation
+                        createZones();
+                    });
+            });
+
+            function removeAnimations() {
+                const container = map.getContainer();
+                container.classList.remove('shake-animation', 'water-animation', 'wind-animation');
+            }
+        });
+    </script>
+</body>
+</html>
