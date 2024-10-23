@@ -4,20 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
     <style>
-        /* Map Styles */
         #map {
             height: 500px;
             position: relative;
-            overflow: hidden; /* Prevent overflow during animations */
+            overflow: hidden;
         }
         .map-container {
             margin: 20px 0;
@@ -25,10 +20,8 @@
         .statistics-container {
             margin-top: 20px;
         }
-
-        /* Earthquake Animation */
         .shake-animation {
-            animation: shake 1s; /* Increased duration to 1 second */
+            animation: shake 1s;
         }
         @keyframes shake {
             0% { transform: translate(1px, 1px); }
@@ -43,27 +36,21 @@
             90% { transform: translate(1px, 2px); }
             100% { transform: translate(1px, -2px); }
         }
-
-        /* Water Animation */
         .water-animation {
-            animation: wave 1s infinite; /* Continuous wave effect */
+            animation: wave 1s infinite;
         }
         @keyframes wave {
             0% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
             100% { transform: translateY(0); }
         }
-
-        /* Wind Animation */
         .wind-animation {
-            animation: spin 1s linear forwards; /* 1 second for the wind spin */
+            animation: spin 1s linear forwards;
         }
         @keyframes spin {
             from { transform: rotate(0deg); }
-            to { transform: rotate(3600deg); } /* 10 full spins */
+            to { transform: rotate(3600deg); }
         }
-
-        /* Alert Box */
         .disaster-alert {
             background: rgba(255, 0, 0, 0.8);
             padding: 10px;
@@ -73,8 +60,6 @@
             color: white;
             font-weight: bold;
         }
-
-        /* Button Styles */
         button, .pdf-button {
             padding: 10px 20px;
             background-color: #007bff;
@@ -82,23 +67,20 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            margin-right: 10px; /* Space between buttons */
+            margin-right: 10px;
         }
         button:hover, .pdf-button:hover {
             background-color: #0056b3;
         }
-
-        /* Zone Styles */
         .danger-zone {
             background-color: red;
             opacity: 0.3;
-            color: white; /* Text color inside the zone, if needed */
+            color: white;
         }
-
         .safe-zone {
             background-color: green;
             opacity: 0.3;
-            color: white; /* Text color inside the zone, if needed */
+            color: white;
         }
     </style>
 </head>
@@ -110,20 +92,14 @@
     <div class="statistics-container">
         <h3>Location: {{ city }}, {{ country }}</h3>
         <p>Possible Natural Disasters: {{ location['disasters'] }}</p>
-
-        <!-- Statistics -->
         <div class="stat"><strong>Weather:</strong> <span id="weather">{{ weather }}</span></div>
         <div class="stat"><strong>Temperature:</strong> <span id="temperature">{{ temperature }}°C</span></div>
         <div class="stat"><strong>Wind Speed:</strong> <span id="wind-speed">{{ wind_speed }} km/h</span></div>
         <div class="stat"><strong>River Flow:</strong> <span id="river-flow">{{ river_flow }}</span></div>
         <div class="stat"><strong>Vibrations:</strong> <span id="vibrations">{{ vibrations }}</span></div>
-
-        <!-- Alert -->
         <div class="disaster-alert" id="disaster-alert">
             ALERT: A disaster is happening!
         </div>
-
-        <!-- Buttons -->
         <div>
             <button id="simulate-button">Simulate Disaster</button>
             <a href="{{ url_for('static', filename='precautions.pdf') }}" class="pdf-button" target="_blank">Precautions</a>
@@ -147,17 +123,14 @@
             let dangerZone, safeZone;
 
             function createZones() {
-                // Remove existing zones
                 if (dangerZone) map.removeLayer(dangerZone);
                 if (safeZone) map.removeLayer(safeZone);
 
-                const radius = 3000; // 3 km
+                const radius = 3000;
 
-                // Generate random positions without checking overlap
                 const dangerLatLng = getRandomLatLng();
                 const safeLatLng = getRandomLatLng();
 
-                // Create Danger Zone
                 dangerZone = L.circle(dangerLatLng, {
                     color: 'red',
                     fillColor: 'red',
@@ -165,7 +138,6 @@
                     radius: radius
                 }).addTo(map).bindPopup('Danger Zone');
 
-                // Create Safe Zone
                 safeZone = L.circle(safeLatLng, {
                     color: 'green',
                     fillColor: 'green',
@@ -180,7 +152,6 @@
                 return L.latLng(locationData.lat + latOffset, locationData.lng + lngOffset);
             }
 
-            // Initial Zones
             createZones();
 
             document.getElementById("simulate-button").addEventListener("click", function() {
@@ -192,10 +163,8 @@
                         alertBox.style.display = 'block';
                         alertBox.textContent = `ALERT: A ${disaster} is happening!`;
 
-                        // Remove previous animations
                         removeAnimations();
 
-                        // Handle disaster-specific animations
                         if (disaster === 'Earthquake') {
                             const container = map.getContainer();
                             container.classList.add('shake-animation');
@@ -208,12 +177,12 @@
                             map.getContainer().appendChild(waterEffect);
                             setTimeout(() => {
                                 waterEffect.remove();
-                            }, 5000); // Adjust duration for visibility
+                            }, 5000);
                             const container = map.getContainer();
                             container.classList.add('water-animation');
                             setTimeout(() => {
                                 container.classList.remove('water-animation');
-                            }, 5000); // Duration for the wave effect
+                            }, 5000);
                         } else if (disaster === 'Hurricane') {
                             const windEffect = document.createElement('div');
                             windEffect.className = 'wind-animation';
@@ -222,10 +191,9 @@
                             container.classList.add('wind-animation');
                             setTimeout(() => {
                                 container.classList.remove('wind-animation');
-                            }, 1000); // Duration for the spin animation
+                            }, 1000);
                         }
 
-                        // Create new zones for each simulation
                         createZones();
                     });
             });
